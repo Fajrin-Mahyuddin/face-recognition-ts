@@ -117,6 +117,10 @@ async function sendImage() {
         loadingEle?.classList.remove("show")
         isSendingImage = false;
         resetElement();
+        inputElement.value = "";
+        videoFiles.length = 0
+        nextBtn.disabled = false;
+        tryBtn.disabled = false;
       }
     } catch (error) {
       loadingEle?.classList.remove("show")
@@ -129,6 +133,7 @@ async function sendImage() {
   } else {
     useToast("Complete all three step !");
     isSendingImage = false;
+
   }
 }
 
@@ -158,8 +163,6 @@ async function previewImage() {
 }
 
 function resetElement() {
-
-  console.log(videoFiles, videoFiles.length);
   imageCanvas = null;
   isPreview = false;
   timer = undefined;
