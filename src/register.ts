@@ -101,6 +101,7 @@ async function sendImage() {
     loadingEle?.classList.add("show");
     labelPrompt.innerHTML = "Submitting...";
     nextBtn.disabled = true;
+    inputElement.disabled = true;
     tryBtn.disabled = true;
     const formData = new FormData();
     formData.append("File1", videoFiles[0]);
@@ -117,7 +118,9 @@ async function sendImage() {
         loadingEle?.classList.remove("show")
         isSendingImage = false;
         resetElement();
+        nextBtn.innerHTML = "Next"
         inputElement.value = "";
+        inputElement.disabled = false;
         videoFiles.length = 0
         nextBtn.disabled = false;
         tryBtn.disabled = false;

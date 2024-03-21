@@ -100,8 +100,8 @@ h1 {
   border: none;
 }
 video, canvas, .img-preview {
-  /* -webkit-transform: scaleX(-1);
-  transform: scaleX(-1); */
+  -webkit-transform: scaleX(-1);
+  transform: scaleX(-1);
 }
 
 .img-preview {
