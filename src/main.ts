@@ -1,10 +1,13 @@
 import './style.css';
 import * as faceapi from 'face-api.js';
 
-const rootHTML = document.getElementById("app");
+const rootHTML = document.getElementById("app") as HTMLDivElement;
 const btn = document.createElement("button");
 btn.setAttribute("class", "btn")
 btn.disabled = true;
+const labelPrompt = document.createElement("div");
+labelPrompt.setAttribute("class", "label");
+labelPrompt.innerHTML = `Loading...`
 const loadingEle = document.querySelector(".loading");
 const boxScannerAnimation = document.createElement("div");
 boxScannerAnimation.setAttribute("class", "box");
@@ -14,6 +17,8 @@ video.setAttribute("class", "video");
 video.setAttribute("width", "500");
 video.setAttribute("height", "500");
 let isSendingImage = false;
+let reScan = false;
+let timer: ReturnType<typeof setTimeout> | undefined;
 
 function startWebcam(video: HTMLVideoElement) {
   navigator.mediaDevices
@@ -59,17 +64,22 @@ function useToast(name: string) {
 
 
 async function sendImage() {
+  if (timer) {
+    clearTimeout(timer)
+    timer = undefined;
+  }
   let imageCanvas: HTMLCanvasElement | null = document.createElement("canvas");
   imageCanvas.width = video.videoWidth;
   imageCanvas.height = video.videoHeight;
   imageCanvas?.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-
+  labelPrompt.innerHTML = "Processing..."
+  loadingEle?.classList.add("show")
+  isSendingImage = true;
   imageCanvas.toBlob(async (blob) => {
     if (blob) {
       const formData = new FormData();
       let file = new File([blob], "1.jpg", { type: "image/jpg" })
       formData.append("File1", file);
-      isSendingImage = true;
       try {
         const req = await fetch("https://face-recog-api.zodiac.com.sg/check-face", { method: "post", body: formData });
         const result = await req.json();
@@ -77,14 +87,15 @@ async function sendImage() {
         if (result) {
           let label = result.result[0]._label;
           useToast(label);
-          loadingEle?.classList.remove("show")
-          btn.innerHTML = "Scan me";
+          loadingEle?.classList.remove("show");
+          reScan = true;
+          document.body.insertBefore(btn, rootHTML.nextSibling);
+          labelPrompt.innerHTML = "Idle"
           imageCanvas = null;
           isSendingImage = false;
         }
       } catch (error) {
         loadingEle?.classList.remove("show")
-        btn.innerHTML = "Scan me";
         imageCanvas = null;
         isSendingImage = false;
         console.log("eror fetch", error);
@@ -96,9 +107,9 @@ async function sendImage() {
 async function main() {
   if (rootHTML) {
     rootHTML.appendChild(video);
-    btn.innerHTML = "Scan me";
+    btn.innerHTML = "Try again";
     rootHTML.insertBefore(boxScannerAnimation, video.nextSibling)
-    document.body.insertBefore(btn, rootHTML.nextSibling);
+    document.body.insertBefore(labelPrompt, rootHTML.nextSibling);
     Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
       faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
@@ -116,11 +127,11 @@ async function main() {
       setInterval(async () => {
         const detections = await faceapi
           .detectAllFaces(video)
-          .withFaceLandmarks()
-          .withFaceDescriptors();
+        // .withFaceLandmarks()
+        // .withFaceDescriptors();
 
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+        // canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
 
         // const results = resizedDetections.map((d) => {
         //   return faceMatcher.findBestMatch(d.descriptor);
@@ -139,15 +150,27 @@ async function main() {
           // faceapi.draw.drawDetections(canvas, resizedDetections)
           // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
           btn.disabled = false;
+          if (!timer && !reScan) {
+            labelPrompt.innerHTML = "Steady";
+            timer = setTimeout(() => {
+              sendImage();
+            }, 3000);
+          }
         } else {
           btn.disabled = true;
+          if (timer) {
+            clearTimeout(timer);
+            timer = undefined;
+          }
+          if (!isSendingImage) {
+            labelPrompt.innerHTML = "Face to the camera";
+          }
         }
       }, 100);
     })
 
     btn.addEventListener("click", () => {
       loadingEle?.classList.add("show")
-      btn.innerHTML = "Scanning...";
       btn.disabled = true;
       sendImage()
     });
