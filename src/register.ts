@@ -191,7 +191,7 @@ video.addEventListener('play', () => {
   setInterval(async () => {
     if (!isPreview) {
       const detections = await faceapi
-        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ maxResults: 1, minConfidence: isPreview ? 0.999 : 0.9 }))
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
 
 
       // canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
@@ -202,11 +202,9 @@ video.addEventListener('play', () => {
       // });
 
       // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-      console.log(detections);
       if (detections && !isSendingImage) {
         // faceapi.draw.drawDetections(canvas, resizedDetections);
         // resizedDetections.forEach(() => {
-        console.log(timer, isPreview);
         if (!isPreview && !timer) {
           if (videoFiles.length > 0) {
             labelPrompt.innerHTML = "Try another pose !"
@@ -233,7 +231,6 @@ video.addEventListener('play', () => {
         btn.disabled = true;
         clearTimeout(timer);
         timer = undefined;
-        console.log("clearrrr", timer);
         if (!isPreview) {
           labelPrompt.innerHTML = "Face to the camera"
         }
@@ -260,8 +257,9 @@ nextBtn.addEventListener("click", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   Promise.all([
-    // faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
+    faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
     faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
+    // faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
     faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
   ]).then(() => startWebcam(video)).catch(error => console.log(error));
 })
